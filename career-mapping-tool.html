@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>職種×資格マッピングツール</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --primary: #1A56DB;
+    --primary-light: #EEF3FF;
+    --accent: #F59E0B;
+    --accent-light: #FFFBEB;
+    --text: #111827;
+    --text-sub: #6B7280;
+    --border: #E5E7EB;
+    --tag-bg: #F3F4F6;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 20px 16px 16px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  header p {
+    font-size: 0.78rem;
+    opacity: 0.85;
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .search-area {
+    background: var(--surface);
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+
+  .search-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--primary);
+  }
+
+  button.search-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+
+  .category-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 0 2px;
+    scrollbar-width: none;
+  }
+  .category-scroll::-webkit-scrollbar { display: none; }
+
+  .cat-chip {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--text-sub);
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .cat-chip.active, .cat-chip:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .main {
+    padding: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .result-header {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    margin-bottom: 12px;
+    padding: 0 2px;
+  }
+
+  .result-header strong {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .job-card {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .job-card-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .job-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .job-info { flex: 1; }
+
+  .job-name {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .job-desc {
+    font-size: 0.78rem;
+    color: var(--text-sub);
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  .cat-label {
+    font-size: 0.7rem;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .toggle-icon {
+    color: var(--text-sub);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 4px;
+    transition: transform 0.2s;
+  }
+
+  .job-card.open .toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  .skills-section {
+    padding: 0 16px 14px;
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .job-card.open .skills-section {
+    display: block;
+  }
+
+  .skills-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 12px 0 8px;
+  }
+
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .skill-tag {
+    font-size: 0.78rem;
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .cert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cert-item:last-child { border-bottom: none; }
+
+  .cert-level {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .level-easy { background: #D1FAE5; color: #065F46; }
+  .level-mid  { background: #FEF3C7; color: #92400E; }
+  .level-hard { background: #FEE2E2; color: #991B1B; }
+
+  .cert-info { flex: 1; }
+
+  .cert-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .cert-meta {
+    font-size: 0.73rem;
+    color: var(--text-sub);
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  .cert-merit {
+    font-size: 0.75rem;
+    color: #065F46;
+    background: #D1FAE5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  .request-box {
+    background: var(--accent-light);
+    border: 1px dashed var(--accent);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .request-box p {
+    font-size: 0.85rem;
+    color: #92400E;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  .request-box a {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-sub);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px 16px;
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    line-height: 1.8;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗺️ 職種 × 資格 マッピングツール</h1>
+  <p>あなたの職種・やりたい仕事から、役立つ資格を探せます<br>職業訓練・キャリアアップ・転職活動に</p>
+</header>
+
+<div class="search-area">
+  <div class="search-row">
+    <input type="text" id="searchInput" placeholder="職種・業務キーワードを入力（例：事務、営業、介護）" oninput="render()">
+    <button class="search-btn" onclick="render()">検索</button>
+  </div>
+  <div class="category-scroll" id="catChips"></div>
+</div>
+
+<div class="main">
+  <div class="result-header" id="resultHeader"></div>
+  <div id="results"></div>
+  <div class="request-box">
+    <p>🙋 探している職種が見つからない場合は<br>
+    <a href="https://note.com/" target="_blank">noteのコメント欄</a>でリクエストしてください。<br>
+    随時追加していきます！</p>
+  </div>
+</div>
+
+<footer>
+  制作：さすらいのITインストラクター（たすいち）<br>
+  ※ 資格情報は参考目安です。受験要件は各主催団体でご確認ください。<br>
+  Ver.1.0 | データは随時更新予定
+</footer>
+
+<script>
+const DATA = [
+  // ===== 事務系 =====
+  {
+    id: "jimu-ippan",
+    name: "一般事務",
+    cat: "事務系",
+    icon: "📋",
+    desc: "書類作成・データ入力・電話対応・スケジュール管理など",
+    skills: ["Word・Excel操作", "ビジネスマナー", "データ入力", "ファイル管理", "コミュニケーション"],
+    certs: [
+      { name: "MOS（Word・Excel）", level: "easy", period: "1〜3ヶ月", cost: "約1万円/科目", merit: "採用担当に伝わりやすい" },
+      { name: "日商PC検定", level: "easy", period: "1〜2ヶ月", cost: "約5千円〜", merit: "実務スキルの証明に" },
+      { name: "ビジネス文書検定", level: "easy", period: "1〜2ヶ月", cost: "約4千円", merit: "文書作成力をアピール" },
+      { name: "秘書検定2級", level: "easy", period: "1〜3ヶ月", cost: "約6千円", merit: "ビジネスマナーの証明" },
+    ]
+  },
+  {
+    id: "jimu-keiri",
+    name: "経理事務",
+    cat: "事務系",
+    icon: "💰",
+    desc: "帳簿記録・伝票処理・給与計算・決算補助など",
+    skills: ["簿記知識", "Excel（関数・ピボット）", "会計ソフト操作", "数値処理"],
+    certs: [
+      { name: "日商簿記3級", level: "easy", period: "2〜3ヶ月", cost: "約3千円", merit: "経理未経験者の必須スタート資格" },
+      { name: "日商簿記2級", level: "mid", period: "3〜6ヶ月", cost: "約5千円", merit: "中小企業の経理で即戦力" },
+      { name: "MOS（Excel）", level: "easy", period: "1〜2ヶ月", cost: "約1万円", merit: "Excel業務効率化に直結" },
+      { name: "給与計算実務能力検定", level: "mid", period: "2〜4ヶ月", cost: "約1万円", merit: "給与計算専門スキルの証明" },
+      { name: "弥生会計認定試験", level: "easy", period: "1〜2ヶ月", cost: "約5千円", merit: "中小企業会計ソフトの実務力" },
+    ]
+  },
+  {
+    id: "jimu-iryo",
+    name: "医療事務",
+    cat: "事務系",
+    icon: "🏥",
+    desc: "受付・レセプト作成・診療報酬請求・カルテ管理など",
+    skills: ["レセプト作成", "診療報酬の知識", "医療用語", "患者対応"],
+    certs: [
+      { name: "医療事務技能審査試験（メディカルクラーク）", level: "easy", period: "2〜4ヶ月", cost: "約7千円", merit: "知名度が高く病院採用に有利" },
+      { name: "診療報酬請求事務能力認定試験", level: "hard", period: "6ヶ月〜1年", cost: "約9千円", merit: "医療事務の最高峰資格" },
+      { name: "調剤事務管理士", level: "easy", period: "2〜3ヶ月", cost: "約7千円", merit: "薬局勤務を目指す方に" },
+    ]
+  },
+  {
+    id: "jimu-jinji",
+    name: "人事・労務事務",
+    cat: "事務系",
+    icon: "👥",
+    desc: "採用補助・勤怠管理・社会保険手続き・研修準備など",
+    skills: ["労務知識", "社会保険手続き", "Excel", "コミュニケーション"],
+    certs: [
+      { name: "社会保険労務士（SR）", level: "hard", period: "1〜2年", cost: "約1.5万円", merit: "労務のプロ資格・独立も可能" },
+      { name: "労務管理士", level: "mid", period: "3〜6ヶ月", cost: "約1万円", merit: "労務実務の基礎証明に" },
+      { name: "FP（ファイナンシャルプランナー）3級", level: "easy", period: "2〜3ヶ月", cost: "約8千円", merit: "給与・社会保険の知識補強に" },
+      { name: "衛生管理者", level: "mid", period: "3〜4ヶ月", cost: "約8千円", merit: "職場環境管理で重宝される" },
+    ]
+  },
+
+  // ===== 営業・販売系 =====
+  {
+    id: "eigyo-ippan",
+    name: "営業職",
+    cat: "営業・販売系",
+    icon: "🤝",
+    desc: "新規開拓・顧客折衝・提案書作成・売上管理など",
+    skills: ["コミュニケーション", "プレゼンテーション", "交渉力", "Excel・PowerPoint"],
+    certs: [
+      { name: "営業士検定", level: "easy", period: "1〜2ヶ月", cost: "約1万円", merit: "営業の基礎スキルの証明" },
+      { name: "MOS（PowerPoint）", level: "easy", period: "1〜2ヶ月", cost: "約1万円", merit: "提案資料作成力をアピール" },
+      { name: "FP3級", level: "easy", period: "2〜3ヶ月", cost: "約8千円", merit: "金融・保険営業に直結" },
+      { name: "宅地建物取引士（宅建）", level: "hard", period: "6ヶ月〜1年", cost: "約8千円", merit: "不動産営業の必須資格" },
+    ]
+  },
+  {
+    id: "hanbai",
+    name: "販売・接客",
+    cat: "営業・販売系",
+    icon: "🛍️",
+    desc: "レジ業務・商品説明・店舗管理・在庫管理など",
+    skills: ["接客マナー", "レジ操作", "商品知識", "クレーム対応"],
+    certs: [
+      { name: "販売士3級（リテールマーケティング）", level: "easy", period: "1〜3ヶ月", cost: "約5千円", merit: "流通・小売業で評価される" },
+      { name: "販売士2級", level: "mid", period: "3〜6ヶ月", cost: "約6千円", merit: "店舗管理職を目指すなら" },
+      { name: "サービス接遇検定", level: "easy", period: "1〜2ヶ月", cost: "約5千円", merit: "おもてなし力の証明に" },
+      { name: "色彩検定3級", level: "easy", period: "1〜2ヶ月", cost: "約8千円", merit: "ファッション・インテリア販売に" },
+    ]
+  },
+
+  // ===== IT系 =====
+  {
+    id: "it-support",
+    name: "ITサポート・ヘルプデスク",
+    cat: "IT系",
+    icon: "💻",
+    desc: "PC設定・トラブル対応・操作説明・システム管理補助など",
+    skills: ["PC操作", "ネットワーク基礎", "トラブルシューティング", "コミュニケーション"],
+    certs: [
+      { name: "ITパスポート（iパス）", level: "easy", period: "1〜2ヶ月", cost: "約7千円", merit: "IT全般の基礎証明・未経験者に最適" },
+      { name: "CompTIA A+", level: "mid", period: "3〜6ヶ月", cost: "約4万円", merit: "ハードウェア・OS知識の国際資格" },
+      { name: "情報セキュリティマネジメント試験", level: "mid", period: "2〜4ヶ月", cost: "約7千円", merit: "セキュリティ知識で差別化" },
+      { name: "MOS（Excel・Word）", level: "easy", period: "1〜2ヶ月", cost: "約1万円", merit: "Office操作の証明" },
+    ]
+  },
+  {
+    id: "it-prog",
+    name: "プログラマー・SE",
+    cat: "IT系",
+    icon: "⌨️",
+    desc: "システム開発・プログラミング・テスト・設計など",
+    skills: ["プログラミング", "アルゴリズム", "DB設計", "テスト手法"],
+    certs: [
+      { name: "基本情報技術者試験（FE）", level: "mid", period: "3〜6ヶ月", cost: "約7千円", merit: "SE・PGの登竜門資格" },
+      { name: "応用情報技術者試験（AP）", level: "hard", period: "6ヶ月〜1年", cost: "約7千円", merit: "中堅エンジニアの証明" },
+      { name: "Oracle Java SE Bronze", level: "mid", period: "3〜4ヶ月", cost: "約3万円", merit: "Java開発スキルの証明" },
+      { name: "AWS認定クラウドプラクティショナー", level: "mid", period: "2〜3ヶ月", cost: "約2万円", merit: "クラウド時代の必須知識" },
+    ]
+  },
+  {
+    id: "it-data",
+    name: "データ分析・DX推進",
+    cat: "IT系",
+    icon: "📊",
+    desc: "データ集計・可視化・業務改善・AI活用推進など",
+    skills: ["Excel（ピボット・関数）", "統計基礎", "データ可視化", "業務改善思考"],
+    certs: [
+      { name: "G検定（AI・深層学習）", level: "mid", period: "2〜3ヶ月", cost: "約1.3万円", merit: "AI・DXの基礎知識証明" },
+      { name: "DX推進パスポート", level: "easy", period: "1〜2ヶ月", cost: "約5千円", merit: "DX推進担当者に" },
+      { name: "統計検定3級", level: "easy", period: "2〜3ヶ月", cost: "約5千円", merit: "データ分析の数理基礎" },
+      { name: "MOS（Excel）エキスパート", level: "mid", period: "2〜3ヶ月", cost: "約1万円", merit: "Excel高度活用の証明" },
+      { name: "Python3エンジニア認定基礎試験", level: "mid", period: "2〜4ヶ月", cost: "約1万円", merit: "データ分析プログラミング入口" },
+    ]
+  },
+
+  // ===== 医療・福祉系 =====
+  {
+    id: "kaigo",
+    name: "介護職",
+    cat: "医療・福祉系",
+    icon: "🤲",
+    desc: "身体介助・生活支援・記録作成・利用者対応など",
+    skills: ["身体介助技術", "コミュニケーション", "記録作成", "医療連携"],
+    certs: [
+      { name: "介護職員初任者研修", level: "easy", period: "1〜4ヶ月", cost: "約5〜15万円", merit: "介護職のスタート資格・必須" },
+      { name: "介護福祉士実務者研修", level: "mid", period: "6ヶ月〜", cost: "約10〜20万円", merit: "介護福祉士受験の前提" },
+      { name: "介護福祉士", level: "hard", period: "実務3年〜", cost: "約3万円", merit: "介護職の国家資格" },
+      { name: "ケアマネジャー（介護支援専門員）", level: "hard", period: "実務5年〜", cost: "約1万円", merit: "ケアプラン作成の専門職" },
+    ]
+  },
+  {
+    id: "hoiku",
+    name: "保育士補助・保育補助",
+    cat: "医療・福祉系",
+    icon: "🧒",
+    desc: "子ども対応・遊び補助・書類作成・保護者対応など",
+    skills: ["子どもとのコミュニケーション", "保育知識", "安全管理", "記録作成"],
+    certs: [
+      { name: "保育士", level: "hard", period: "専門学校・受験コース", cost: "約1万円（試験）", merit: "保育職の国家資格" },
+      { name: "子育て支援員", level: "easy", period: "2〜3ヶ月（研修）", cost: "無料〜低額", merit: "保育補助として即働ける" },
+      { name: "幼稚園教諭", level: "hard", period: "専門学校・大学", cost: "約3千円（試験）", merit: "幼稚園での勤務に必須" },
+    ]
+  },
+  {
+    id: "kangoshi-hojo",
+    name: "看護助手・病院補助",
+    cat: "医療・福祉系",
+    icon: "🩺",
+    desc: "患者補助・病棟業務補助・環境整備・物品管理など",
+    skills: ["患者対応", "衛生管理", "チームワーク", "体力"],
+    certs: [
+      { name: "看護助手実務能力認定試験", level: "easy", period: "1〜2ヶ月", cost: "約8千円", merit: "病院採用で評価される" },
+      { name: "医療事務技能審査試験", level: "easy", period: "2〜4ヶ月", cost: "約7千円", merit: "病院内の別業務へのステップ" },
+      { name: "介護職員初任者研修", level: "easy", period: "1〜4ヶ月", cost: "約5〜15万円", merit: "介護と掛け合わせで強み増加" },
+    ]
+  },
+
+  // ===== 製造・技術系 =====
+  {
+    id: "seizou",
+    name: "製造・工場オペレーター",
+    cat: "製造・技術系",
+    icon: "🏭",
+    desc: "製品製造・機械操作・品質チェック・ライン管理など",
+    skills: ["機械操作", "品質管理基礎", "安全管理", "作業効率化"],
+    certs: [
+      { name: "フォークリフト運転技能講習", level: "easy", period: "4日間", cost: "約3〜5万円", merit: "工場・倉庫で広く使える" },
+      { name: "QC検定3級", level: "easy", period: "2〜3ヶ月", cost: "約5千円", merit: "品質管理の基礎を証明" },
+      { name: "QC検定2級", level: "mid", period: "4〜6ヶ月", cost: "約6千円", merit: "品質管理担当者レベル" },
+      { name: "危険物取扱者乙種4類", level: "mid", period: "2〜4ヶ月", cost: "約3千円", merit: "化学系工場・ガソリンスタンドで必須" },
+      { name: "衛生管理者", level: "mid", period: "3〜4ヶ月", cost: "約8千円", merit: "製造現場のリーダー職に" },
+    ]
+  },
+  {
+    id: "kensetsu",
+    name: "建設・現場作業",
+    cat: "製造・技術系",
+    icon: "🔨",
+    desc: "施工作業・現場補助・材料管理・安全確認など",
+    skills: ["体力・安全意識", "工具操作", "チームワーク", "図面読解"],
+    certs: [
+      { name: "小型移動式クレーン運転技能講習", level: "easy", period: "3日間", cost: "約4万円", merit: "現場で即戦力になれる" },
+      { name: "玉掛け技能講習", level: "easy", period: "3日間", cost: "約3万円", merit: "クレーン作業の必須資格" },
+      { name: "2級建築施工管理技士", level: "hard", period: "実務経験＋試験", cost: "約1万円", merit: "現場監督へのステップ" },
+      { name: "電気工事士2種", level: "mid", period: "3〜6ヶ月", cost: "約9千円", merit: "電気工事に必須の国家資格" },
+    ]
+  },
+
+  // ===== サービス・その他 =====
+  {
+    id: "inshoku",
+    name: "飲食・調理",
+    cat: "サービス・その他",
+    icon: "🍳",
+    desc: "調理・接客・衛生管理・メニュー開発補助など",
+    skills: ["調理技術", "衛生管理", "接客", "スピード・体力"],
+    certs: [
+      { name: "食品衛生責任者", level: "easy", period: "1日（講習）", cost: "約1万円", merit: "飲食店開業・管理職に必須" },
+      { name: "調理師", level: "mid", period: "実務2年〜", cost: "約7千円", merit: "調理のプロ資格" },
+      { name: "栄養士・管理栄養士", level: "hard", period: "専門学校・大学", cost: "約1万円（試験）", merit: "給食・病院・福祉施設に強い" },
+      { name: "ソムリエ・ワインエキスパート", level: "mid", period: "6ヶ月〜1年", cost: "約3万円", merit: "レストラン・ホテルで差別化" },
+    ]
+  },
+  {
+    id: "kanko",
+    name: "観光・宿泊・ホテル",
+    cat: "サービス・その他",
+    icon: "🏨",
+    desc: "フロント業務・案内・予約管理・施設管理など",
+    skills: ["接客・おもてなし", "語学（英語）", "予約システム", "クレーム対応"],
+    certs: [
+      { name: "旅行業務取扱管理者（国内）", level: "mid", period: "3〜6ヶ月", cost: "約6千円", merit: "旅行業・観光業の必須資格" },
+      { name: "通訳案内士", level: "hard", period: "1〜2年", cost: "約1.3万円", merit: "インバウンド需要でニーズ急増" },
+      { name: "TOEIC（700点以上）", level: "mid", period: "個人差あり", cost: "約8千円", merit: "ホテル・観光業で差別化" },
+      { name: "ホテルビジネス実務検定", level: "easy", period: "2〜3ヶ月", cost: "約8千円", merit: "ホテル就職に特化した資格" },
+    ]
+  },
+  {
+    id: "unso",
+    name: "運送・物流・ドライバー",
+    cat: "サービス・その他",
+    icon: "🚚",
+    desc: "配送・荷物管理・ルート計画・積み下ろしなど",
+    skills: ["運転技術", "ルート管理", "体力", "時間管理"],
+    certs: [
+      { name: "普通自動車免許（AT限定なし推奨）", level: "easy", period: "1〜3ヶ月（教習所）", cost: "約30万円", merit: "運送業の基本" },
+      { name: "中型・大型自動車免許", level: "mid", period: "2〜6週間（所持免許による）", cost: "約20〜35万円", merit: "トラックドライバーへの道" },
+      { name: "フォークリフト運転技能講習", level: "easy", period: "4日間", cost: "約3〜5万円", merit: "倉庫・物流センターで必須" },
+      { name: "運行管理者（貨物）", level: "mid", period: "3〜6ヶ月", cost: "約6千円", merit: "物流管理職を目指すなら" },
+    ]
+  },
+  {
+    id: "beauty",
+    name: "美容・エステ・ネイル",
+    cat: "サービス・その他",
+    icon: "💅",
+    desc: "施術・カウンセリング・商品販売・サロン管理など",
+    skills: ["施術技術", "接客・カウンセリング", "衛生管理", "センス・トレンド感覚"],
+    certs: [
+      { name: "美容師免許", level: "hard", period: "専門学校2年", cost: "約1.3万円（試験）", merit: "美容師として働く必須資格" },
+      { name: "ネイリスト技能検定3級", level: "easy", period: "2〜3ヶ月", cost: "約9千円", merit: "ネイリストのスタート資格" },
+      { name: "エステティシャン（AJESTHE認定）", level: "mid", period: "6ヶ月〜1年", cost: "約1万円", merit: "エステサロンへの就職に有利" },
+      { name: "アロマテラピー検定1級", level: "easy", period: "2〜3ヶ月", cost: "約7千円", merit: "癒し系サービスとの組み合わせに" },
+    ]
+  },
+];
+
+const CATS = ["すべて", ...Array.from(new Set(DATA.map(d => d.cat)))];
+let activeCat = "すべて";
+
+function init() {
+  const chips = document.getElementById("catChips");
+  CATS.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "cat-chip" + (c === activeCat ? " active" : "");
+    btn.textContent = c;
+    btn.onclick = () => { activeCat = c; document.querySelectorAll(".cat-chip").forEach(b => b.classList.remove("active")); btn.classList.add("active"); render(); };
+    chips.appendChild(btn);
+  });
+  render();
+}
+
+function render() {
+  const q = document.getElementById("searchInput").value.trim();
+  let filtered = DATA;
+  if (activeCat !== "すべて") filtered = filtered.filter(d => d.cat === activeCat);
+  if (q) {
+    const kw = q.toLowerCase();
+    filtered = filtered.filter(d =>
+      d.name.includes(kw) || d.cat.includes(kw) || d.desc.includes(kw) || d.skills.some(s => s.includes(kw))
+    );
+  }
+
+  const header = document.getElementById("resultHeader");
+  header.innerHTML = q
+    ? `「<strong>${q}</strong>」の検索結果：${filtered.length}件`
+    : `${activeCat === "すべて" ? "全職種" : activeCat}：${filtered.length}件`;
+
+  const container = document.getElementById("results");
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty">😅 「${q}」に一致する職種が見つかりませんでした。<br>下のリクエスト欄からお知らせください！</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(d => `
+    <div class="job-card" id="card-${d.id}">
+      <div class="job-card-header" onclick="toggle('${d.id}')">
+        <div class="job-icon">${d.icon}</div>
+        <div class="job-info">
+          <div class="job-name">${d.name}</div>
+          <div class="job-desc">${d.desc}</div>
+        </div>
+        <div class="cat-label">${d.cat}</div>
+        <div class="toggle-icon">▼</div>
+      </div>
+      <div class="skills-section">
+        <div class="skills-label">この仕事で求められるスキル</div>
+        <div class="skill-tags">${d.skills.map(s => `<span class="skill-tag">${s}</span>`).join("")}</div>
+        <div class="skills-label" style="margin-top:14px">おすすめ資格・検定</div>
+        ${d.certs.map(c => `
+          <div class="cert-item">
+            <span class="cert-level ${c.level === 'easy' ? 'level-easy' : c.level === 'mid' ? 'level-mid' : 'level-hard'}">
+              ${c.level === 'easy' ? '入門' : c.level === 'mid' ? '中級' : '上級'}
+            </span>
+            <div class="cert-info">
+              <div class="cert-name">${c.name}</div>
+              <div class="cert-meta">📅 目安期間：${c.period}　💴 受験料：${c.cost}</div>
+              <span class="cert-merit">✅ ${c.merit}</span>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function toggle(id) {
+  document.getElementById("card-" + id).classList.toggle("open");
+}
+
+init();
+</script>
+</body>
+</html>
